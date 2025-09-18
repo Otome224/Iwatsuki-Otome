@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ポケモンアルバム</title>
+  <!--背景デザイン-->>
+  <style>
+   body {
+    /* 背景画像のURL */
+    background-image: url('https://assets.pokemon.com//assets/cms2/img/misc/virtual-backgrounds/sword-shield/pokemon-in-the-wild.png');
+
+    /* 背景画像を画面全体にフィットさせる */
+    background-size: cover;
+
+    /* 背景画像を固定する（スクロールしても動かない） */
+    background-attachment: fixed;
+
+    /* 背景を中央に配置 */
+    background-position: center;
+
+    /* 背景の繰り返しをなしにする */
+    background-repeat: no-repeat;
+
+    /* 文字を少し見やすくするために全体の色を少し調整 */
+    color: #fff;
+    
+  }
+  </style>
+</head>
+<body>
+  <br><br>
+  <img src = "https://msp.c.yimg.jp/images/v2/FUTi93tXq405grZVGgDqG_hBv_xx-TAApL8eXOp1toPXG5-bUWFQHKOkBjAQMwEaz1zMbme_nd-ZmSYAD_kAoP5Vaf9giU4gQsVkZTqaKzJmYOO0fO1igpX4st3yPjU8ZFJUknztles4iYbjZCen2iCB-F5PdVm9BBdSVKnteieNVv82-T497pM1j7_VUla1C4TCeMExqUGbxItUdLU4ZWkxNz_EhX1MFkkheSBn8hAuy93x6MnCJomDawqvFjExZv8DpTzgA2RncM5S-FclF6o4a_K6X0z27Ysr7L3vLdw=/c8e0b40c9ec85d0218754642a64cc047.png?errorImage=false alt="プリン" style="vertical-align: middle; width:80px;">
+  <span style="background: linear-gradient(to right, #80ffd4, #B99EFF, #ff6ec7, #6ec6ff); -webkit-background-clip: text;-webkit-text-fill-color: transparent; font-weight: bold; vertical-align: middle; font-size:40px; margin-left:2px ">ポケモンアルバム<br></span>
+   <body>
+    &nbsp;&nbsp;&nbsp;ポケモンアルバムはすべてのポケモン好きのために作られたサイトです。<br>&nbsp;&nbsp;&nbsp;主に３つの機能があります<br>&nbsp;&nbsp;&nbsp;１．ポケモン検索機能&nbsp;&nbsp;&nbsp;&nbsp;２．履歴機能&nbsp;&nbsp;&nbsp;&nbsp;３．お気に入り機能<br>&nbsp;&nbsp;&nbsp;ポケモンをもっと知って、自分だけのポケモンアルバムを作ろう&#128522;<br><br><br>
+  </body>
+  <!--検索機能-->
+  <span style="color: #ff6ec7; font-weight: bold; font-size: large;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ポケモン検索&#128270;</span>
+  <form id="searchForm">
+  <input type="text" id="Pokemonname" placeholder="ポケモン名またはID">
+  <button type="submit">検索</button>
+  </form>
+  <div id="result"></div><br><br>
+
+  <!--履歴機能-->
+  <span style="color: #a020f0; font-weight: bold; font-size: large;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;検索履歴&#9203;</span><br>
+  <ul id="historyList"></ul><br>
+
+  <!--お気に入り機能-->
+  <span style="color: #00bfff; font-weight: bold; font-size: large;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;お気に入りポケモン&#128150;</span><br>
+  <div id="favorites"></div>
+
+  <!--ここからjavascript-->>
+  <script>
+  //１．検索機能
+  async function getPokemonData(name) {
+  try {
+    if (!name) return; // 空入力は無視
+
+    const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
+    if (!response.ok) {
+      throw new Error('ポケモンが見つかりません');
+    }
+    const data = await response.json();
+
+    // DOM表示
+    const resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = `
+      <h2>${data.name}</h2>
+      <img src="${data.sprites.front_default}" alt="${data.name}">
+      <p>高さ: ${data.height}</p>
+      <p>重さ: ${data.weight}</p>
+    `;
+
+    // ★ボタンを追加
+    const favBtn = addFavoriteButton(name);
+    resultDiv.appendChild(favBtn); // ここでDOMに追加
+
+    // 履歴追加
+    addToHistory(name); 
+  } catch (error) {
+    document.getElementById('result').innerHTML = `<p style="color:red">${error.message}</p>`;
+  }
+}
+
+// フォーム送信時の処理
+document.getElementById('searchForm').addEventListener('submit', function(e) {
+  e.preventDefault(); // ページリロードを防ぐ
+
+  // 入力値を取得（ここでのnameは検索フォームから入力されたポケモン名のみを取得。つまりお気に入り機能で使われているnameとは別物）
+  const name = document.getElementById('Pokemonname').value.toLowerCase();
+
+  // API呼び出し
+  getPokemonData(name);
+
+  // 入力欄を空にする
+  document.getElementById('Pokemonname').value = '';
+});
+
+//２履歴機能
+let searchHistory = []; // 履歴を保持する配列
+
+function addToHistory(name) {
+  if (!searchHistory.includes(name)) {
+    searchHistory.push(name); // 履歴保持配列に追加
+    renderHistory();
+  }
+}
+
+function renderHistory() {
+  const historyList = document.getElementById('historyList');
+  historyList.innerHTML = '';//古い履歴を空にする
+  searchHistory.forEach(item => {
+    const li = document.createElement('li');
+    li.textContent = item;
+    li.style.cursor = 'pointer';
+
+    // フォントの色や角丸などの装飾
+    li.style.color = '#ff6ec7';          // 文字色をピンク系
+    li.style.backgroundColor = '#fff0f5'; // 背景色を薄ピンクに
+    li.style.padding = '5px 10px';
+    li.style.borderRadius = '8px';
+    li.style.marginBottom = '5px';
+    li.style.display = 'inline-block';//横並びに
+
+    //ホバー時の動き
+    li.addEventListener('mouseenter', () => {
+      li.style.transform = 'scale(1.2)';  // 少し大きくなる
+      li.style.color = '#ff99cc';         // 色も変える
+      li.style.backgroundColor = '#ffe0f0';
+    });
+    li.addEventListener('mouseleave', () => {
+      li.style.transform = 'scale(1)';    // 元に戻す
+      li.style.color = '#ff6ec7';
+      li.style.backgroundColor = '#fff0f5';
+    });
+
+    li.addEventListener('click', () => getPokemonData(item)); // クリックで再検索
+    historyList.appendChild(li);
+  });
+}
+
+//３お気に入り機能
+let favorites = [];//履歴を保持すための要素
+
+// Cookieから読み込み
+function loadFavorites() {
+  const cookieData = document.cookie.replace(/(?:(?:^|.*;\s*)favorites\s*\=\s*([^;]*).*$)|^.*$/, "$1");
+  favorites = cookieData ? JSON.parse(cookieData) : [];
+  renderFavorites();
+}
+
+// Cookieに保存
+function saveFavorites() {
+  document.cookie = "favorites=" + JSON.stringify(favorites) + ";path=/;max-age=" + 60*60*24*30;
+}
+
+// 検索結果の★ボタン作成
+function addFavoriteButton(name) {
+  const favBtn = document.createElement('button');//ボタンを作る関数の作成（この関数は検索時に現れるようにgetpokemondata関数内で呼び起こす）
+  favBtn.textContent = favorites.includes(name) ? '★' : '☆'; // お気に入りなら黒★、そうでなければ白☆  
+  favBtn.addEventListener('click', () => {
+    if(favorites.includes(name)){
+      favorites = favorites.filter(f => f !== name); // 削除（お気に入りをもう一度クリックすることですでにお気に入りに入っていたものを削除）
+    } else {
+      favorites.push(name); // 追加
+    }
+    saveFavorites();//cookie↑更新
+    renderFavorites();//お気に入りリスト↓更新
+    favBtn.textContent = favorites.includes(name) ? '★' : '☆'; // ボタンの表示更新
+  });
+  return favBtn;
+}
+
+// お気に入りリスト表示
+function renderFavorites() {
+  const favDiv = document.getElementById('favorites');
+  favDiv.innerHTML = '';
+  favorites.forEach(name => {
+    const btn = document.createElement('button');
+    btn.textContent = name;
+    btn.addEventListener('click', () => getPokemonData(name));
+    favDiv.appendChild(btn);
+  });//配列の中にあるnameの値が終わるまで繰り返し処理（ここでのnameはお気に入り履歴を捕飛するためのfavorit配列の中にある要素）
+}
+
+// ページ読み込み時にCookieから読み込み
+loadFavorites();
+
+  </script>
+</body>
+</html>
